@@ -1,0 +1,37 @@
+name: Generate AAR
+
+on:
+  push:
+    branches: [ "main" ] # Change to "master" if your default branch is master
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x ./gradlew
+
+    # Tells Gradle to build your specific library module
+    - name: Build AAR with Gradle
+      run: ./gradlew :linear_slide_animator:assembleRelease
+
+    # Uploads the finished AAR so you can download it
+    - name: Upload AAR Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: linear_slide_animator-release-aar
+        path: '**/build/outputs/aar/*-release.aar'
+        
