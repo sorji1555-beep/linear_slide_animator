@@ -3,4 +3,4 @@ jdk:
 before_install:
   - sdk install java 17.0.0-open
 build:
-  artifact: linearslideanimator/build/outputs/aar/linearslideanimator-release.aar
+  artifact: linear_slide_animator/build/outputs/aar/linear_slide_animator-release.aar
