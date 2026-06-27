@@ -107,13 +107,13 @@ public class LinearSlideAnimator {
      * with any caller-set tags. If your app uses integer tag keys near Integer.MAX_VALUE,
      * call {@link #setTagKeys(int, int)} with your own safe pair before constructing.
      */
-    private static int TAG_TRANSLATION_KEY = 0x00FFFF01;
+    private static int TAG_TRANSLATION_KEY = Integer.MAX_VALUE;
 
     /**
      * View tag key used to persist each view's original layer type so hardware acceleration
      * can be reverted to exactly what it was before the animation started.
      */
-    private static int TAG_LAYER_TYPE_KEY = 0x00FFFF02;
+    private static int TAG_LAYER_TYPE_KEY = Integer.MAX_VALUE - 1;
 
     /**
      * Overrides the default View tag keys used to store per-view animation state.
@@ -285,7 +285,7 @@ public class LinearSlideAnimator {
      * Internal implementation of autoVisibility that accepts a flag controlling whether
      * GONE (true) or INVISIBLE (false) is used for pre-animation hiding.
      */
-    private LinearSlideAnimator autoVisibility(boolean gone) {
+    public LinearSlideAnimator autoVisibility(boolean gone) {
         this.autoVisibility = true;
         boolean isInAnimation =
                 direction == Direction.LEFT_IN
@@ -405,8 +405,7 @@ public class LinearSlideAnimator {
     public void animate() {
         View parent = parentViewRef.get();
         if (parent == null) return;
-        if (autoVisibility) autoVisibility(false);
-
+       
         cancel();
 
         Rect earlyParentRect = new Rect(getPossibleRect(parent));
@@ -416,83 +415,108 @@ public class LinearSlideAnimator {
             setupDynamicLayoutObserver(parent);
         }
 
-        parent.post(() -> {
-            View currentParent = parentViewRef.get();
-            if (currentParent == null) return;
+        parent.post(
+                () -> {
+                    View currentParent = parentViewRef.get();
+                    if (currentParent == null) return;
 
-            parentRect = new Rect(getPossibleRect(currentParent));
-            final boolean isReverseExecution = withReverse;
-            withReverse = false;
+                    parentRect = new Rect(getPossibleRect(currentParent));
+                    final boolean isReverseExecution = withReverse;
+                    withReverse = false;
 
-            boolean isInAnim =
-                    direction == Direction.LEFT_IN
-                            || direction == Direction.UP_IN
-                            || direction == Direction.RIGHT_IN
-                            || direction == Direction.DOWN_IN;
+                    boolean isInAnim =
+                            direction == Direction.LEFT_IN
+                                    || direction == Direction.UP_IN
+                                    || direction == Direction.RIGHT_IN
+                                    || direction == Direction.DOWN_IN;
 
-            // Choose interpolator: decelerate for _IN (ease into position),
-            // accelerate for _OUT (build speed as leaving). Reversed animations
-            // use the opposite curve so the motion still feels natural.
-            TimeInterpolator targetInterpolator;
-            if (customInterpolator != null) {
-                targetInterpolator = customInterpolator;
-            } else if (isInAnim) {
-                targetInterpolator = isReverseExecution
-                        ? new AccelerateInterpolator(2.5f)
-                        : new DecelerateInterpolator(2.5f);
-            } else {
-                targetInterpolator = isReverseExecution
-                        ? new DecelerateInterpolator(2.5f)
-                        : new AccelerateInterpolator(2.5f);
-            }
+                    if (isInAnim && autoVisibility && !withReverse) autoVisibility(false);
 
-            for (AnimatorListener listener : listeners) {
-                listener.onAnimationStart(this);
-            }
-
-            applyHardwareLayers();
-
-            // UP_IN and DOWN_OUT animate from the last child to the first so that
-            // lower views appear to fall into place after upper ones — matching
-            // natural reading order. All other directions iterate forward.
-            if (direction == Direction.UP_IN && !isReverseExecution) {
-                int step = 0;
-                for (int i = targetViewsRefs.size() - 1; i >= 0; i--) {
-                    processViewItem(targetViewsRefs.get(i).get(), step++,
-                            isReverseExecution, isInAnim, targetInterpolator);
-                }
-                return;
-            } else if (direction == Direction.DOWN_OUT && !isReverseExecution) {
-                int step = 0;
-                for (int i = targetViewsRefs.size() - 1; i >= 0; i--) {
-                    processViewItem(targetViewsRefs.get(i).get(), step++,
-                            isReverseExecution, isInAnim, targetInterpolator);
-                }
-                return;
-            }
-
-            // For reverse executions (other than UP_IN / DOWN_OUT), iterate backward
-            // so the last view that appeared is the first to leave — preserving symmetry.
-            if (isReverseExecution) {
-                if (direction != Direction.UP_IN || direction != Direction.DOWN_OUT) {
-                    int step = 0;
-                    for (int i = targetViewsRefs.size() - 1; i >= 0; i--) {
-                        processViewItem(targetViewsRefs.get(i).get(), step++,
-                                isReverseExecution, isInAnim, targetInterpolator);
+                    // Choose interpolator: decelerate for _IN (ease into position),
+                    // accelerate for _OUT (build speed as leaving). Reversed animations
+                    // use the opposite curve so the motion still feels natural.
+                    TimeInterpolator targetInterpolator;
+                    if (customInterpolator != null) {
+                        targetInterpolator = customInterpolator;
+                    } else if (isInAnim) {
+                        targetInterpolator =
+                                isReverseExecution
+                                        ? new AccelerateInterpolator(2.5f)
+                                        : new DecelerateInterpolator(2.5f);
+                    } else {
+                        targetInterpolator =
+                                isReverseExecution
+                                        ? new DecelerateInterpolator(2.5f)
+                                        : new AccelerateInterpolator(2.5f);
                     }
-                } else {
-                    for (int i = 0; i < targetViewsRefs.size(); i++) {
-                        processViewItem(targetViewsRefs.get(i).get(), i,
-                                isReverseExecution, isInAnim, targetInterpolator);
+
+                    for (AnimatorListener listener : listeners) {
+                        listener.onAnimationStart(this);
                     }
-                }
-            } else {
-                for (int i = 0; i < targetViewsRefs.size(); i++) {
-                    processViewItem(targetViewsRefs.get(i).get(), i,
-                            isReverseExecution, isInAnim, targetInterpolator);
-                }
-            }
-        });
+
+                    applyHardwareLayers();
+
+                    // UP_IN and DOWN_OUT animate from the last child to the first so that
+                    // lower views appear to fall into place after upper ones — matching
+                    // natural reading order. All other directions iterate forward.
+                    if (direction == Direction.UP_IN && !isReverseExecution) {
+                        int step = 0;
+                        for (int i = targetViewsRefs.size() - 1; i >= 0; i--) {
+                            processViewItem(
+                                    targetViewsRefs.get(i).get(),
+                                    step++,
+                                    isReverseExecution,
+                                    isInAnim,
+                                    targetInterpolator);
+                        }
+                        return;
+                    } else if (direction == Direction.DOWN_OUT && !isReverseExecution) {
+                        int step = 0;
+                        for (int i = targetViewsRefs.size() - 1; i >= 0; i--) {
+                            processViewItem(
+                                    targetViewsRefs.get(i).get(),
+                                    step++,
+                                    isReverseExecution,
+                                    isInAnim,
+                                    targetInterpolator);
+                        }
+                        return;
+                    }
+
+                    // For reverse executions (other than UP_IN / DOWN_OUT), iterate backward
+                    // so the last view that appeared is the first to leave — preserving symmetry.
+                    if (isReverseExecution) {
+                        if (direction != Direction.UP_IN && direction != Direction.DOWN_OUT) {
+                            int step = 0;
+                            for (int i = targetViewsRefs.size() - 1; i >= 0; i--) {
+                                processViewItem(
+                                        targetViewsRefs.get(i).get(),
+                                        step++,
+                                        isReverseExecution,
+                                        isInAnim,
+                                        targetInterpolator);
+                            }
+                        } else {
+                            for (int i = 0; i < targetViewsRefs.size(); i++) {
+                                processViewItem(
+                                        targetViewsRefs.get(i).get(),
+                                        i,
+                                        isReverseExecution,
+                                        isInAnim,
+                                        targetInterpolator);
+                            }
+                        }
+                    } else {
+                        for (int i = 0; i < targetViewsRefs.size(); i++) {
+                            processViewItem(
+                                    targetViewsRefs.get(i).get(),
+                                    i,
+                                    isReverseExecution,
+                                    isInAnim,
+                                    targetInterpolator);
+                        }
+                    }
+                });
     }
 
     /**
