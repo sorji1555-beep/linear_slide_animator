@@ -1,0 +1,62 @@
+plugins {
+    id 'com.android.library'
+    id 'maven-publish'
+}
+
+android {
+    namespace 'com.xyz.animator'
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName '1.0.0'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.annotation:annotation:1.7.0'
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.release
+                groupId = 'com.xyz'
+                artifactId = 'animator'
+                version = '1.0.0'
+            }
+        }
+        repositories {
+            maven {
+                name = "GitHubPackages"
+                // Encoded space to avoid URI syntax errors
+                url = uri("https://maven.pkg.github.com/xyz-hub-coder/Linear%20Slide%20Animator")
+                credentials {
+                    username = System.getenv("GPR_USER") ?: "xyz-hub-coder"
+                    password = System.getenv("GPR_KEY") ?: "" 
+                }
+            }
+        }
+    }
+}
+
+tasks.configureEach { task ->
+    if (task.name.contains("processDebug") && task.name.contains("Resources")) {
+        task.enabled = false
+    }
+}
