@@ -20,10 +20,11 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    # This official action automatically handles caching and sets up Gradle safely
+    # Fixed: added gradle-version for projects without a committed wrapper script
     - name: Setup and Run Gradle Build
       uses: gradle/actions/setup-gradle@v3
       with:
+        gradle-version: '8.2.2'
         arguments: :animator:assembleRelease
 
     # Uploads the finished AAR so you can download it
