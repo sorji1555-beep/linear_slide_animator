@@ -2,7 +2,7 @@ name: Generate AAR
 
 on:
   push:
-    branches: [ "main" ] # Change to "master" if your default branch is master
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
