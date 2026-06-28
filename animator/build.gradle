@@ -26,7 +26,6 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    // Tells AGP to expose the release component for publishing
     publishing {
         singleVariant('release')
     }
@@ -36,11 +35,10 @@ dependencies {
     implementation 'androidx.annotation:annotation:1.7.0'
 }
 
-// FIX: Removed afterEvaluate block and using modern lazy component matching
 publishing {
     publications {
         release(MavenPublication) {
-            // Using components.findByName prevents early evaluation crashes
+            // Safe evaluation for Gradle 9
             var releaseComponent = components.findByName("release")
             if (releaseComponent != null) {
                 from releaseComponent
