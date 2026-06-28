@@ -35,27 +35,24 @@ dependencies {
     implementation 'androidx.annotation:annotation:1.7.0'
 }
 
-publishing {
-    publications {
-        release(MavenPublication) {
-            // Safe evaluation for Gradle 9
-            var releaseComponent = components.findByName("release")
-            if (releaseComponent != null) {
-                from releaseComponent
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.release
+                groupId = 'com.xyz'
+                artifactId = 'animator'
+                version = '1.0.0'
             }
-            
-            groupId = 'com.xyz'
-            artifactId = 'animator'
-            version = '1.0.0'
         }
-    }
-    repositories {
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/xyz-hub-coder/Linear%20Slide%20Animator")
-            credentials {
-                username = System.getenv("GPR_USER") ?: "xyz-hub-coder"
-                password = System.getenv("GPR_KEY") ?: "" 
+        repositories {
+            maven {
+                name = "GitHubPackages"
+                url = uri("https://maven.pkg.github.com/xyz-hub-coder/Linear%20Slide%20Animator")
+                credentials {
+                    username = System.getenv("GPR_USER") ?: "xyz-hub-coder"
+                    password = System.getenv("GPR_KEY") ?: "" 
+                }
             }
         }
     }
