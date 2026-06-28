@@ -1,6 +1,5 @@
 plugins {
-    // This version contains the internal fixes required for the Gradle 9.0 ecosystem
-    id 'com.android.library' version '9.0.0-alpha01' apply false
+    id 'com.android.library' version '8.6.0' apply false
 }
 
 tasks.register('clean', Delete) {
